@@ -1,0 +1,31 @@
+WITH approved_modify AS (
+    SELECT 
+        vca_id,
+        create_dt AS approved_time
+    FROM 
+        vca_enrichment
+    WHERE 
+        request_type = 'Modify' 
+        AND status = 'Approved'
+),
+followup_modify AS (
+    SELECT 
+        vca_id,
+        create_dt AS followup_time
+    FROM 
+        vca_enrichment
+    WHERE 
+        request_type = 'Modify'
+)
+SELECT 
+    a.vca_id,
+    a.approved_time,
+    f.followup_time
+FROM 
+    approved_modify a
+INNER JOIN 
+    followup_modify f
+ON 
+    a.vca_id = f.vca_id
+    AND f.followup_time > a.approved_time
+    AND f.followup_time <= a.approved_time + INTERVAL '1' HOUR;
