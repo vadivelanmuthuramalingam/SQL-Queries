@@ -1,0 +1,44 @@
+WITH create_requests AS (
+    SELECT 
+        vca_id,
+        create_dt AS create_time
+    FROM 
+        vca_enrichment
+    WHERE 
+        request_type = 'Create' 
+        AND status = 'Approved'
+),
+modify_requests AS (
+    SELECT 
+        vca_id,
+        create_dt AS modify_time
+    FROM 
+        vca_enrichment
+    WHERE 
+        request_type = 'Modify'
+)
+SELECT 
+    c.vca_id,
+    COUNT(m.modify_time) AS modify_count_within_1hr
+FROM 
+    create_requests c
+LEFT JOIN 
+    modify_requests m
+ON 
+    c.vca_id = m.vca_id
+    AND m.modify_time BETWEEN c.create_time AND c.create_time + INTERVAL '1 HOUR'
+GROUP BY 
+    c.vca_id;
+
+
+
+
+
+
+SELECT 
+    *
+FROM 
+    vca_enrichment
+WHERE 
+    request_type = 'Create'
+    AND create_dt >= SYSTIMESTAMP - INTERVAL '1' HOUR;
