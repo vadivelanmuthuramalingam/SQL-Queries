@@ -1,0 +1,25 @@
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
+import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
+import org.springframework.stereotype.Component;
+
+import java.util.Map;
+
+@Component
+@Endpoint(id = "podmetadata")
+public class PodMetadataEndpoint {
+
+    @Value("${POD_NAME:unknown}")
+    private String podName;
+
+    @Value("${POD_NAMESPACE:unknown}")
+    private String podNamespace;
+
+    @ReadOperation
+    public Map<String, String> podMetadata() {
+        return Map.of(
+            "podName", podName,
+            "podNamespace", podNamespace
+        );
+    }
+}
