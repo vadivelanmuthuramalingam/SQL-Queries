@@ -1,0 +1,38 @@
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientBuilder;
+import io.fabric8.openshift.api.model.Route;
+import io.fabric8.openshift.api.model.RouteBuilder;
+
+public class RouteCreatorService {
+
+    public void createRoutesWithSamePort(String namespace, String serviceName, String targetPort, String[] dnsHosts) {
+        try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+            for (String host : dnsHosts) {
+                Route route = new RouteBuilder()
+                        .withNewMetadata()
+                            .withName("route-" + host.replace(".", "-")) // Generate a unique name for each route
+                            .withNamespace(namespace)
+                        .endMetadata()
+                        .withNewSpec()
+                            .withHost(host) // Set the DNS for the route
+                            .withNewTo()
+                                .withKind("Service")
+                                .withName(serviceName)
+                            .endTo()
+                            .withPort(new io.fabric8.openshift.api.model.RoutePortBuilder()
+                                    .withNewTargetPort(targetPort) // Use the same target port for all routes
+                                    .build())
+                        .endSpec()
+                        .build();
+
+                // Create or replace the route in OpenShift
+                client.adapt(io.fabric8.openshift.client.OpenShiftClient.class)
+                      .routes()
+                      .inNamespace(namespace)
+                      .createOrReplace(route);
+
+                System.out.println("Route created for host: " + host);
+            }
+        }
+    }
+}
