@@ -1,0 +1,4 @@
+Any Validation is required for Incoming payload, please create the validation user story if its required.
+
+What is the action required in Grace if Mastercard is sending unknown request or the notification is not related to CITI or mandatory field value's are missed in request paylod.
+
