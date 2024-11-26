@@ -1,0 +1,103 @@
+1. Why JWT Came into Existence?
+JWT (JSON Web Token) was introduced to address the following issues with traditional authentication and session management systems:
+
+Scalability of Session-Based Authentication:
+
+Traditional session-based authentication stores user sessions on the server side, requiring server memory and leading to scaling issues for large-scale applications.
+Stateless Authentication:
+
+JWT enables stateless authentication, where no session data is stored on the server. The client holds all the required information in the token.
+Cross-Platform Communication:
+
+JWT is compact and can be easily transmitted between different components (e.g., web, mobile, and backend APIs).
+Security for Modern Applications:
+
+Provides secure token-based authentication for APIs, microservices, and distributed architectures.
+2. What Does JWT Contain?
+JWT consists of three parts:
+
+Header:
+
+Contains metadata about the token, such as:
+Type (JWT)
+Algorithm used for signing (e.g., HS256, RS256).
+Payload:
+
+Contains claims (information about the user or subject).
+Example claims:
+Registered Claims: sub (subject), iat (issued at), exp (expiration).
+Public Claims: Custom claims like role, permissions.
+Signature:
+
+Ensures the integrity of the token.
+Created using the encoded header, payload, and a secret key (or private key for asymmetric algorithms).
+3. How JWT Works?
+Authentication Flow:
+
+Login:
+Client sends credentials (e.g., username and password) to the authentication server.
+Generate JWT:
+Server validates credentials and generates a JWT containing user details and roles.
+Send JWT to Client:
+The client receives and stores the JWT (e.g., in localStorage or cookies).
+Use JWT for Requests:
+The client includes the JWT in the Authorization header for subsequent API requests.
+Verify JWT:
+The server verifies the JWT's signature and expiration before granting access.
+4. How Does JWT Secure Applications?
+JWT ensures security through:
+
+Signature Validation:
+The server validates the token’s signature to ensure it wasn’t tampered with.
+Expiration (exp claim):
+JWTs include an expiration time to prevent misuse after a certain period.
+Compact and Encoded:
+JWT is Base64Url encoded but not encrypted, so sensitive data should not be stored in it.
+Algorithm Options:
+Symmetric (HS256) and Asymmetric (RS256) signing ensure robust token integrity.
+HTTPS:
+Using JWT over HTTPS prevents token interception (man-in-the-middle attacks).
+5. Comparing OAuth2 and JWT
+Feature	OAuth2	JWT
+Purpose	Authentication & Authorization	Token format used in OAuth2 or standalone authentication
+Statefulness	Can be stateful (uses server-side session)	Stateless (all data in token)
+Token Type	Bearer token	Self-contained token
+Storage	Server maintains session state	No server storage (stateless)
+Security	Highly secure, robust framework	Secure with proper implementation
+Complexity	More complex	Simpler to implement
+Use Case	Enterprise-level apps	Lightweight APIs and microservices
+Pros and Cons of JWT:
+
+Pros	Cons
+Stateless and scalable	Cannot be revoked easily
+Compact and fast	Larger payload increases size
+Cross-platform support	Must use HTTPS for security
+No server memory usage	Sensitive data not encrypted
+6. Diagram
+Authentication and Authorization Workflow
+plaintext
+Copy code
+Client           Authentication Server            API Server
+   |                     |                             |
+   |---Login Request---->|                             |
+   |                     |---Validate Credentials---->|
+   |                     |<---Authentication OK-------|
+   |                     |-----Generate JWT---------->|
+   |<----JWT Token--------                             |
+   |-----Request with JWT---------------------------->|
+   |                     |-----Validate JWT---------->|
+   |                     |<------JWT Valid------------|
+   |<------Authorized Response-----------------------|
+PPT Content Outline
+Title Slide: "Understanding JSON Web Token (JWT)"
+Introduction: Why JWT was introduced.
+What is JWT?: Explanation of its structure.
+How JWT Works?: Authentication and Authorization flow.
+Security Features: How JWT secures applications.
+Comparison: OAuth2 vs JWT (with a table).
+Pros and Cons: Advantages and disadvantages of JWT.
+Diagram: JWT workflow illustration.
+Conclusion: Key takeaways.
+
+
+https://jwt.io/#debugger
