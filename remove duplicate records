@@ -3,6 +3,145 @@ CREATE OR REPLACE PROCEDURE archive_all_clients IS
         SELECT Client_ID FROM archival_clients; -- Table containing client IDs for archival
 
     v_client_id VARCHAR2(36);
+    v_deleted_rows NUMBER := 0;
+BEGIN
+    -- Loop through each client in archival_clients table
+    FOR client_rec IN client_cursor LOOP
+        v_client_id := client_rec.Client_ID;
+
+        BEGIN
+            -- Call the archival procedure for each client and capture the row count
+            archive_old_modify_records(v_client_id, v_deleted_rows);
+
+            -- Insert the row count into vca_archival_errors table
+            INSERT INTO vca_archival_errors (client_id, error_message, error_code, archival_row_count, error_time)
+            VALUES (v_client_id, 'Archival completed successfully', NULL, v_deleted_rows, SYSTIMESTAMP);
+            COMMIT;
+
+        EXCEPTION
+            WHEN OTHERS THEN
+                -- Log error but continue processing the next client
+                INSERT INTO vca_archival_errors (client_id, error_message, error_code, archival_row_count, error_time)
+                VALUES (v_client_id, SQLERRM, SQLCODE, NULL, SYSTIMESTAMP);
+                COMMIT;
+
+                DBMS_OUTPUT.PUT_LINE('Error archiving Client: ' || v_client_id || ' - ' || SQLERRM);
+        END;
+    END LOOP;
+
+    DBMS_OUTPUT.PUT_LINE('All client archival jobs completed.');
+END archive_all_clients;
+/
+
+
+CREATE OR REPLACE PROCEDURE archive_old_modify_records (
+    p_client_id VARCHAR2,
+    o_row_count OUT NUMBER  -- OUT parameter to return the affected row count
+) IS
+    v_batch_size NUMBER := 1000000; -- Process 1M records per batch
+    v_rows_moved NUMBER := 0;
+    v_deleted_rows NUMBER := 0;
+BEGIN
+    -- Initialize the row count to 0
+    o_row_count := 0;
+
+    LOOP
+        -- Set a savepoint before INSERT
+        SAVEPOINT before_insert;
+
+        -- Move older Modify records to Archive Table in batches (per Client_ID)
+        INSERT /*+ APPEND */ INTO vca_enrichment_transaction_archive
+        SELECT * FROM vca_enrichment_transaction v1
+        WHERE v1.Client_ID = p_client_id
+        AND v1.Request_Type = 'Modify'
+        AND v1.ID NOT IN (
+            SELECT MAX(v2.ID)
+            FROM vca_enrichment_transaction v2
+            WHERE v2.Client_ID = p_client_id
+            AND v2.Request_Type = 'Modify'
+            GROUP BY v2.Purchace_Request_ID
+        )
+        AND ROWNUM <= v_batch_size;
+
+        -- Capture number of rows moved
+        v_rows_moved := SQL%ROWCOUNT;
+        o_row_count := o_row_count + v_rows_moved;  -- Add to the total count
+
+        COMMIT;
+
+        -- Exit loop when no more records are left for this client
+        EXIT WHEN v_rows_moved = 0;
+
+        -- Set a savepoint before DELETE
+        SAVEPOINT before_delete;
+
+        -- Delete older Modify records from Main Table in batches (per Client_ID)
+        DELETE FROM vca_enrichment_transaction v1
+        WHERE v1.Client_ID = p_client_id
+        AND v1.Request_Type = 'Modify'
+        AND v1.ID NOT IN (
+            SELECT MAX(v2.ID)
+            FROM vca_enrichment_transaction v2
+            WHERE v2.Client_ID = p_client_id
+            AND v2.Request_Type = 'Modify'
+            GROUP BY v2.Purchace_Request_ID
+        )
+        AND ROWNUM <= v_batch_size;
+
+        -- Capture number of rows deleted
+        v_deleted_rows := SQL%ROWCOUNT;
+        o_row_count := o_row_count + v_deleted_rows;  -- Add to the total count
+
+        COMMIT;  -- Commit only if delete is successful
+
+    END LOOP;
+
+    DBMS_OUTPUT.PUT_LINE('Archival process completed for Client: ' || p_client_id);
+    DBMS_OUTPUT.PUT_LINE('Total Rows Moved: ' || o_row_count);
+
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Rollback and capture error if any
+        ROLLBACK;
+        DBMS_OUTPUT.PUT_LINE('Error during archival: ' || SQLERRM);
+        RAISE;
+END archive_old_modify_records;
+/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CREATE OR REPLACE PROCEDURE archive_all_clients IS
+    CURSOR client_cursor IS
+        SELECT Client_ID FROM archival_clients; -- Table containing client IDs for archival
+
+    v_client_id VARCHAR2(36);
 BEGIN
     -- Loop through each client in archival_clients table
     FOR client_rec IN client_cursor LOOP
